@@ -33,13 +33,14 @@ export class ClaudeExecutor extends EventEmitter {
 
         this.process.stdout?.on('data', (data: Buffer) => {
           const output = data.toString();
+          console.log(`📤 Claude stdout (${output.length} chars):`, JSON.stringify(output.slice(0, 200)));
           this.outputBuffer += output;
           this.emit('output', output);
         });
 
         this.process.stderr?.on('data', (data: Buffer) => {
           const error = data.toString();
-          console.error('Claude Code stderr:', error);
+          console.error('📤 Claude stderr:', JSON.stringify(error));
           this.emit('error', error);
         });
 
@@ -49,10 +50,12 @@ export class ClaudeExecutor extends EventEmitter {
         });
 
         this.process.on('spawn', () => {
+          console.log('✅ Claude Code process spawned successfully');
           resolve();
         });
 
         this.process.on('exit', (code, signal) => {
+          console.log(`⚠️ Claude Code process exited with code ${code}, signal ${signal}`);
           this.emit('exit', { code, signal });
           this.process = null;
         });
@@ -113,8 +116,11 @@ export class ClaudeExecutor extends EventEmitter {
       }, 30000); // 30 second timeout
 
       try {
-        this.process.stdin.write(prompt + '\n');
+        console.log(`📥 Writing to Claude stdin: ${JSON.stringify(prompt + '\n')}`);
+        const written = this.process.stdin.write(prompt + '\n');
+        console.log(`📥 Write successful: ${written}`);
       } catch (writeError) {
+        console.error('📥 Write error:', writeError);
         clearTimeout(overallTimeout);
         reject(writeError);
       }
